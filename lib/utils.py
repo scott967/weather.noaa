@@ -10,6 +10,7 @@ import xbmc, xbmcaddon
 from dateutil.parser import parse
 import socket, urllib.request
 import json
+from pprint import pformat
 
 #standard_library.install_aliases()
 
@@ -28,15 +29,24 @@ TIMEFORMAT  = xbmc.getRegion('meridiem')
 
 def log(txt):
     if DEBUG == 'true':
-        message = u'%s: %s' % (ADDONID, txt)
+        message = '%s: %s' % (ADDONID, txt)
         xbmc.log(msg=message, level=xbmc.LOGDEBUG)
 
+def pp(json_dict) ->str:
+    """pretty prints dict from json for kodi
+
+    Args:
+        json_dict (dict): dict from json data
+
+    Returns:
+        str: pretty print dict
+    """
+    return pformat(json_dict, indent=2)
 
 
-
-def get_url_JSON(url):
+def get_url_JSON(url) ->dict:
     try:
-        xbmc.log('fetching url: %s' % url,level=xbmc.LOGDEBUG)
+        xbmc.log(f'fetching url: {url}', level=xbmc.LOGDEBUG)
         try:
             timeout = 30
             socket.setdefaulttimeout(timeout)
@@ -49,24 +59,27 @@ def get_url_JSON(url):
             except:
                 time.sleep(60)
                 response = urllib.request.urlopen(req)
-                
+
             responsedata = response.read()
-            data = json.loads(responsedata)
-            log('data: %s' % data)
+            data:dict = json.loads(responsedata)
+            log(f'data: {pp(data)}')
             # Happy path, we found and parsed data
             return data
         except:
-            xbmc.log('failed to parse json: %s' % url,level=xbmc.LOGERROR)
-            xbmc.log('data: %s' % data,level=xbmc.LOGERROR)
+            xbmc.log(f'failed to parse json: {url}', level=xbmc.LOGERROR)
+            if data:
+                xbmc.log(f'data: {pp(data)}', level=xbmc.LOGERROR)
+            else:
+                xbmc.log('data: No data', level=xbmc.LOGERROR)
     except:
-        xbmc.log('failed to fetch : %s' % url,level=xbmc.LOGERROR)
-    return None
+        xbmc.log(f'failed to fetch : {url}', level=xbmc.LOGERROR)
+    return {}
 
 
 
 def get_url_response(url):
     try:
-        xbmc.log('fetching url: %s' % url,level=xbmc.LOGDEBUG)
+        xbmc.log(f'fetching url: {url}', level=xbmc.LOGDEBUG)
         timeout = 30
         socket.setdefaulttimeout(timeout)
         # this call to urllib.request.urlopen now uses the default timeout
@@ -81,11 +94,11 @@ def get_url_response(url):
             response = urllib.request.urlopen(req)
 
         responsedata = response.read()
-        log('data: %s' % responsedata)
+        log(f'data: {responsedata}')
         # Happy path, we found and parsed data
         return responsedata
     except:
-        xbmc.log('failed to fetch : %s' % url,level=xbmc.LOGERROR)
+        xbmc.log(f'failed to fetch : {url}', level=xbmc.LOGERROR)
     return None
 
 def get_url_image(url,destination):
@@ -93,7 +106,7 @@ def get_url_image(url,destination):
         urllib.request.urlretrieve(url, destination)
         return destination
     except:
-        xbmc.log('failed to fetch : %s' % url,level=xbmc.LOGERROR)
+        xbmc.log(f'failed to fetch : {url}', level=xbmc.LOGERROR)
     return None
 
 
@@ -141,7 +154,7 @@ WEATHER_CODES = {
         'day/blizzard':             '15', #'Blizzard'
         'day/fog':                  '20', #'Fog/mist'
 
-                
+
         'night/skc':                '31', #'Fair/clear'
         'night/few':                '29', #'A few clouds'
         'night/sct':                '29', #'Partly cloudy'
@@ -212,7 +225,7 @@ WEATHER_CODES = {
         'day/ncold':            '25', #'Cold'
         'day/nblizzard':        '15', #'Blizzard'
         'day/nfog':             '20', #'Fog/mist'
-         '': 'na' 
+         '': 'na'
     }
 
 MONTH_NAME_LONG = { '01' : 21,
@@ -226,7 +239,7 @@ MONTH_NAME_LONG = { '01' : 21,
         '09' : 29,
         '10' : 30,
         '11' : 31,
-        '12' : 32 
+        '12' : 32
     }
 
 MONTH_NAME_SHORT = { '01' : 51,
@@ -240,7 +253,7 @@ MONTH_NAME_SHORT = { '01' : 51,
         '09' : 59,
         '10' : 60,
         '11' : 61,
-        '12' : 62 
+        '12' : 62
     }
 
 WEEK_DAY_LONG = { '0' : 17,
@@ -249,7 +262,7 @@ WEEK_DAY_LONG = { '0' : 17,
         '3' : 13,
         '4' : 14,
         '5' : 15,
-        '6' : 16 
+        '6' : 16
     }
 
 WEEK_DAY_SHORT = { '0' : 47,
@@ -258,10 +271,10 @@ WEEK_DAY_SHORT = { '0' : 47,
         '3' : 43,
         '4' : 44,
         '5' : 45,
-        '6' : 46 
+        '6' : 46
     }
 
-FORECAST = { 
+FORECAST = {
         'thunderstorm with light rain': LANGUAGE(32201),
         'thunderstorm with rain':       LANGUAGE(32202),
         'thunderstorm with heavy rain': LANGUAGE(32203),
@@ -337,7 +350,7 @@ FORECAST = {
         'hurricane':                    LANGUAGE(32273),
         'clear':                        LANGUAGE(32274),
         'clouds':                       LANGUAGE(32275),
-        'rain':                         LANGUAGE(32276) 
+        'rain':                         LANGUAGE(32276)
     }
 
 #def SPEED(mps):
@@ -374,19 +387,19 @@ FORECAST = {
 
 
 
-def FtoC(Fahrenheit):
+def FtoC(Fahrenheit) ->float:
     try:
-        Celsius = (float(Fahrenheit) - 32.0) * 5.0/9.0 
-        return Celsius 
+        Celsius = (float(Fahrenheit) - 32.0) * 5.0/9.0
+        return Celsius
     except:
-        return
-        
-def CtoF(Celsius):
+        return 0
+
+def CtoF(Celsius) ->float:
     try:
         Fahrenheit = (float(Celsius) * 9.0/5.0) + 32.0
-        return Fahrenheit 
+        return Fahrenheit
     except:
-        return
+        return 0
 
 
 
@@ -409,7 +422,7 @@ def TEMP(deg):
         temp = deg
     return str(int(round(temp)))
 
-def WIND_DIR(deg):
+def WIND_DIR(deg:int) ->int:
     if deg >= 349 or deg <= 11:
         return 71
     elif deg >= 12 and deg <= 33:
@@ -442,6 +455,7 @@ def WIND_DIR(deg):
         return 85
     elif deg >= 327 and deg <= 348:
         return 86
+    return 71
 
 #def KPHTOBFT(spd):
 #    if (spd < 1.0):
@@ -475,7 +489,7 @@ def WIND_DIR(deg):
 #    return bft
 
 
-    
+
 def FEELS_LIKE_C_KPH(Ts, Vs=0, Hs=0):
     #xbmc.log('Running FEELS_LIKE_C_KPH: %s %s %s' % (Ts, Vs, Hs),level=xbmc.LOGERROR)
     if not Vs:
@@ -483,9 +497,9 @@ def FEELS_LIKE_C_KPH(Ts, Vs=0, Hs=0):
     T=float(Ts)
     V=float(Vs)
     H=float(Hs)
-    # first check if we have a wind-chill value    
+    # first check if we have a wind-chill value
     windchill =    WIND_CHILL_C_KPH(T, V)
-    if windchill and windchill < T :    
+    if windchill and windchill < T :
         return windchill
     else:         # otherwise, check for heat index
         heatindex = HEAT_INDEX_C(T, H)
@@ -505,11 +519,11 @@ def FEELS_LIKE_F_MPH(Ts, Vs=0, Hs=0):
     V=float(Vs)
     H=float(Hs)
     #xbmc.log('Running FEELS_LIKE_F_MPH: %s %s %s' % (T, V, H),level=xbmc.LOGERROR)
-    # first check if we have a wind-chill value    
+    # first check if we have a wind-chill value
     windchill = WIND_CHILL_F_MPH(T, V)
     #xbmc.log('windchill returns: %s' % (windchill),level=xbmc.LOGERROR)
 
-    if windchill and windchill < T:    
+    if windchill and windchill < T:
         return windchill
     else:         # otherwise, check for heat index
         heatindex = HEAT_INDEX_F(T, H)
@@ -520,7 +534,7 @@ def FEELS_LIKE_F_MPH(Ts, Vs=0, Hs=0):
     # otherwise, neither windchill nor heatindex apply
     #xbmc.log('FEELS_LIKE_F_MPH: Not Applicable',level=xbmc.LOGERROR)
     return
-        
+
 
 def WIND_CHILL_F_MPH(Ts, Vs):
     T=float(Ts)
@@ -533,11 +547,11 @@ def WIND_CHILL_F_MPH(Ts, Vs):
         if WC < T-2.0:
             #xbmc.log('WindChill for %sF %s mph = %sF' % (T, V, WC),level=xbmc.LOGERROR)
             return WC
-            
+
     # otherwise, windchill is not relevant, so return
     return
-    
-    
+
+
 def WIND_CHILL_C_KPH(Ts, Vs):
     T=float(Ts)
     V=float(Vs)
@@ -545,7 +559,7 @@ def WIND_CHILL_C_KPH(Ts, Vs):
     Vmph = V/1.609344
     windchill=WIND_CHILL_F_MPH(TF,Vmph)
     if windchill:
-        return FtoC(windchill)
+         return FtoC(windchill)
     # otherwise, no windchill so return
     return
 
@@ -563,14 +577,14 @@ def HEAT_INDEX_F(Ts, Rs):
     # Test if simply formula is applicable
     if HI > 80:    # then we need to use the full fancy formula
         ##xbmc.log'HI is over 80 %sF' % (HI),level=xbmc.LOGERROR)
-        HI = ( -42.379 
-               + 2.04901523*T 
-               + 10.14333127*R 
-               - .22475541*T*R 
-               - .00683783*T*T 
-               - .05481717*R*R 
-               + .00122874*T*T*R 
-               + .00085282*T*R*R 
+        HI = ( -42.379
+               + 2.04901523*T
+               + 10.14333127*R
+               - .22475541*T*R
+               - .00683783*T*T
+               - .05481717*R*R
+               + .00122874*T*T*R
+               + .00085282*T*R*R
                - .00000199*T*T*R*R
              )
         ##xbmc.log('Fancy hi 1 is %sF' % (HI),level=xbmc.LOGERROR)
@@ -580,7 +594,7 @@ def HEAT_INDEX_F(Ts, Rs):
             ##xbmc.log('adjusted hi 2 is %sF' % (HI),level=xbmc.LOGERROR)
         if R > 85 and T >80 and T <87:
             ADJUSTMENT = ( (R-85.0)/10.0 ) * ( (87.0-T)/5.0 )
-            HI = HI + ADJUSTMENT    
+            HI = HI + ADJUSTMENT
             ##xbmc.log('adjusted hi 3 is %sF' % (HI),level=xbmc.LOGERROR)
     ##xbmc.log'Final HI is %sF' % (HI),level=xbmc.LOGERROR)
     if HI > 80 and HI > (T+2):    # if we have a heat-index, over 80 (and it's highter then the normal temp) then return it
@@ -592,10 +606,10 @@ def HEAT_INDEX_C(Ts, Rs):
     R=float(Rs)
     TF = CtoF(T) # calaculation is done in F
     HI = HEAT_INDEX_F(TF, R)
-    if HI: 
+    if HI:
         return FtoC(HI)
     # otherwise, no relevennt heat index so return
-        
+
 
 #### thanks to FrostBox @ http://forum.kodi.tv/showthread.php?tid=114637&pid=937168#pid937168
 def DEW_POINT(Tc=0.0, R=93.0, ext=True, minR=( 0, 0.075 )[ 0 ]):
@@ -674,7 +688,7 @@ def get_time(stamp):
         localtime = time.strftime('%H:%M', date_time)
     return localtime
 
-def get_weekday(stamp, form):
+def get_weekday(stamp, form) ->str:
     date_time = time.localtime(stamp)
     weekday = time.strftime('%w', date_time)
     if form == 's':
@@ -682,7 +696,8 @@ def get_weekday(stamp, form):
     elif form == 'l':
         return xbmc.getLocalizedString(WEEK_DAY_LONG[weekday])
     else:
-        return int(weekday)
+        #return int(weekday)
+        return weekday
 
 #def get_month(stamp, form):
 #    date_time = time.localtime(stamp)
