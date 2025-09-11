@@ -1,16 +1,17 @@
 # -*- coding: utf-8 -*-
 #from __future__ import unicode_literals
 
+import json
 #from future import standard_library
 import math
+import socket
 import time
-
-import xbmc, xbmcaddon
-
-from dateutil.parser import parse
-import socket, urllib.request
-import json
+import urllib.request
 from pprint import pformat
+
+import xbmc
+import xbmcaddon
+from dateutil.parser import parse
 
 #standard_library.install_aliases()
 
@@ -45,6 +46,7 @@ def pp(json_dict) ->str:
 
 
 def get_url_JSON(url) ->dict:
+    data = {}
     try:
         xbmc.log(f'fetching url: {url}', level=xbmc.LOGDEBUG)
         try:
@@ -53,10 +55,11 @@ def get_url_JSON(url) ->dict:
             # this call to urllib.request.urlopen now uses the default timeout
             # we have set in the socket module
             req = urllib.request.Request(url)
-            req.add_header('User-Agent', ' Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.0.3) Gecko/2008092417 Firefox/3.0.3')
+            req.add_header('User-Agent',
+                           ' Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.0.3) Gecko/2008092417 Firefox/3.0.3')
             try:
                 response = urllib.request.urlopen(req)
-            except:
+            except Exception:
                 time.sleep(60)
                 response = urllib.request.urlopen(req)
 
@@ -65,15 +68,15 @@ def get_url_JSON(url) ->dict:
             log(f'data: {pp(data)}')
             # Happy path, we found and parsed data
             return data
-        except:
+        except Exception:
             xbmc.log(f'failed to parse json: {url}', level=xbmc.LOGERROR)
             if data:
                 xbmc.log(f'data: {pp(data)}', level=xbmc.LOGERROR)
             else:
                 xbmc.log('data: No data', level=xbmc.LOGERROR)
-    except:
+    except Exception:
         xbmc.log(f'failed to fetch : {url}', level=xbmc.LOGERROR)
-    return {}
+    return data
 
 
 
@@ -85,11 +88,12 @@ def get_url_response(url):
         # this call to urllib.request.urlopen now uses the default timeout
         # we have set in the socket module
         req = urllib.request.Request(url)
-        req.add_header('User-Agent', ' Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.0.3) Gecko/2008092417 Firefox/3.0.3')
+        req.add_header('User-Agent',
+                       ' Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.0.3) Gecko/2008092417 Firefox/3.0.3')
 
         try:
             response = urllib.request.urlopen(req)
-        except:
+        except Exception:
             time.sleep(60)
             response = urllib.request.urlopen(req)
 
@@ -97,17 +101,17 @@ def get_url_response(url):
         log(f'data: {responsedata}')
         # Happy path, we found and parsed data
         return responsedata
-    except:
+    except Exception:
         xbmc.log(f'failed to fetch : {url}', level=xbmc.LOGERROR)
     return None
 
-def get_url_image(url,destination):
+def get_url_image(url:str,destination:str) ->str:
     try:
         urllib.request.urlretrieve(url, destination)
         return destination
-    except:
+    except Exception:
         xbmc.log(f'failed to fetch : {url}', level=xbmc.LOGERROR)
-    return None
+    return ''
 
 
 WEATHER_CODES = {
@@ -329,7 +333,6 @@ FORECAST = {
         'scattered clouds':             LANGUAGE(32252),
         'broken clouds':                LANGUAGE(32253),
         'overcast clouds':              LANGUAGE(32254),
-        'tornado':                      LANGUAGE(32255),
         'tropical storm':               LANGUAGE(32256),
         'hurricane':                    LANGUAGE(32257),
         'cold':                         LANGUAGE(32258),
@@ -347,7 +350,6 @@ FORECAST = {
         'severe gale':                  LANGUAGE(32270),
         'storm':                        LANGUAGE(32271),
         'violent storm':                LANGUAGE(32272),
-        'hurricane':                    LANGUAGE(32273),
         'clear':                        LANGUAGE(32274),
         'clouds':                       LANGUAGE(32275),
         'rain':                         LANGUAGE(32276)
@@ -356,7 +358,7 @@ FORECAST = {
 #def SPEED(mps):
 #    try:
 #        val = float(mps)
-#    except:
+#    except Exception:
 #        return ''
 #
 #    if SPEEDUNIT == 'km/h':
@@ -391,32 +393,32 @@ def FtoC(Fahrenheit) ->float:
     try:
         Celsius = (float(Fahrenheit) - 32.0) * 5.0/9.0
         return Celsius
-    except:
+    except Exception:
         return 0
 
 def CtoF(Celsius) ->float:
     try:
         Fahrenheit = (float(Celsius) * 9.0/5.0) + 32.0
         return Fahrenheit
-    except:
+    except Exception:
         return 0
 
 
 
 def TEMP(deg):
-    if TEMPUNIT == u'\N{DEGREE SIGN}'+'F':
+    if TEMPUNIT == '\N{DEGREE SIGN}'+'F':
         temp = deg * 1.8 + 32
-    elif TEMPUNIT == u'K':
+    elif TEMPUNIT == 'K':
         temp = deg + 273.15
-    elif TEMPUNIT == u'°Ré':
+    elif TEMPUNIT == '°Ré':
         temp = deg * 0.8
-    elif TEMPUNIT == u'°Ra':
+    elif TEMPUNIT == '°Ra':
         temp = deg * 1.8 + 491.67
-    elif TEMPUNIT == u'°Rø':
+    elif TEMPUNIT == '°Rø':
         temp = deg * 0.525 + 7.5
-    elif TEMPUNIT == u'°D':
+    elif TEMPUNIT == '°D':
         temp = deg / -0.667 + 150
-    elif TEMPUNIT == u'°N':
+    elif TEMPUNIT == '°N':
         temp = deg * 0.33
     else:
         temp = deg
@@ -559,7 +561,7 @@ def WIND_CHILL_C_KPH(Ts, Vs):
     Vmph = V/1.609344
     windchill=WIND_CHILL_F_MPH(TF,Vmph)
     if windchill:
-         return FtoC(windchill)
+        return FtoC(windchill)
     # otherwise, no windchill so return
     return
 
@@ -907,7 +909,7 @@ MAPSECTORS = {
         "static":"1200x1200.jpg",
         "loop":"600x600.gif",
         },
-    
+
     "na": {
         "name":LANGUAGE(32382),
         "path":"GOES19/ABI/SECTOR/na/%s/900x540.jpg",
@@ -1229,4 +1231,3 @@ LOOPSECTORS = {
     "hi":    {"name":LANGUAGE(32389),"path":"ridge/standard/HAWAII_loop.gif"},
     "guam":  {"name":LANGUAGE(32397),"path":"ridge/standard/GUAM_loop.gif"}
     }
-

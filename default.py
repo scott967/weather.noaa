@@ -11,7 +11,7 @@ from lib import noaa
 
 
 if (__name__ == '__main__'):
-    noaa.noaa(sys)
+    noaa.Noaa()
 
 
 
