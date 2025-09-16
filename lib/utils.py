@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
-#from __future__ import unicode_literals
+# from __future__ import unicode_literals
 
 import json
-#from future import standard_library
+# from future import standard_library
 import math
 import socket
 import time
@@ -13,27 +13,26 @@ import xbmc
 import xbmcaddon
 from dateutil.parser import parse
 
-#standard_library.install_aliases()
+# standard_library.install_aliases()
 
 
-ADDON       = xbmcaddon.Addon()
-ADDONID     = ADDON.getAddonInfo('id')
-LANGUAGE    = ADDON.getLocalizedString
-DEBUG       = ADDON.getSetting('Debug')
-TEMPUNIT    = xbmc.getRegion('tempunit')
-SPEEDUNIT   = xbmc.getRegion('speedunit')
-DATEFORMAT  = xbmc.getRegion('dateshort')
-TIMEFORMAT  = xbmc.getRegion('meridiem')
-
-
+ADDON = xbmcaddon.Addon()
+ADDONID = ADDON.getAddonInfo('id')
+LANGUAGE = ADDON.getLocalizedString
+DEBUG = ADDON.getSetting('Debug')
+TEMPUNIT = xbmc.getRegion('tempunit')
+SPEEDUNIT = xbmc.getRegion('speedunit')
+DATEFORMAT = xbmc.getRegion('dateshort')
+TIMEFORMAT = xbmc.getRegion('meridiem')
 
 
 def log(txt):
     if DEBUG == 'true':
-        message = '%s: %s' % (ADDONID, txt)
+        message = f'{ADDONID}: {txt}'
         xbmc.log(msg=message, level=xbmc.LOGDEBUG)
 
-def pp(json_dict) ->str:
+
+def pp(json_dict) -> str:
     """pretty prints dict from json for kodi
 
     Args:
@@ -45,7 +44,7 @@ def pp(json_dict) ->str:
     return pformat(json_dict, indent=2)
 
 
-def get_url_JSON(url) ->dict:
+def get_url_JSON(url) -> dict:
     data = {}
     try:
         xbmc.log(f'fetching url: {url}', level=xbmc.LOGDEBUG)
@@ -64,7 +63,7 @@ def get_url_JSON(url) ->dict:
                 response = urllib.request.urlopen(req)
 
             responsedata = response.read()
-            data:dict = json.loads(responsedata)
+            data: dict = json.loads(responsedata)
             log(f'data: {pp(data)}')
             # Happy path, we found and parsed data
             return data
@@ -77,7 +76,6 @@ def get_url_JSON(url) ->dict:
     except Exception:
         xbmc.log(f'failed to fetch : {url}', level=xbmc.LOGERROR)
     return data
-
 
 
 def get_url_response(url):
@@ -105,7 +103,8 @@ def get_url_response(url):
         xbmc.log(f'failed to fetch : {url}', level=xbmc.LOGERROR)
     return None
 
-def get_url_image(url:str,destination:str) ->str:
+
+def get_url_image(url: str, destination: str) -> str:
     try:
         urllib.request.urlretrieve(url, destination)
         return destination
@@ -113,7 +112,7 @@ def get_url_image(url:str,destination:str) ->str:
         xbmc.log(f'failed to fetch : {url}', level=xbmc.LOGERROR)
     return ''
 
-
+#autopep8:off
 WEATHER_CODES = {
 
         'day/skc':                  '32', #'Fair/clear'
@@ -354,8 +353,9 @@ FORECAST = {
         'clouds':                       LANGUAGE(32275),
         'rain':                         LANGUAGE(32276)
     }
+#autopep8:on
 
-#def SPEED(mps):
+# def SPEED(mps):
 #    try:
 #        val = float(mps)
 #    except Exception:
@@ -388,21 +388,20 @@ FORECAST = {
 #    return str(int(round(speed)))
 
 
-
-def FtoC(Fahrenheit) ->float:
+def FtoC(Fahrenheit) -> float:
     try:
         Celsius = (float(Fahrenheit) - 32.0) * 5.0/9.0
         return Celsius
     except Exception:
         return 0
 
-def CtoF(Celsius) ->float:
+
+def CtoF(Celsius) -> float:
     try:
         Fahrenheit = (float(Celsius) * 9.0/5.0) + 32.0
         return Fahrenheit
     except Exception:
         return 0
-
 
 
 def TEMP(deg):
@@ -424,7 +423,8 @@ def TEMP(deg):
         temp = deg
     return str(int(round(temp)))
 
-def WIND_DIR(deg:int) ->int:
+
+def WIND_DIR(deg: int) -> int:
     if deg >= 349 or deg <= 11:
         return 71
     elif deg >= 12 and deg <= 33:
@@ -459,7 +459,7 @@ def WIND_DIR(deg:int) ->int:
         return 86
     return 71
 
-#def KPHTOBFT(spd):
+# def KPHTOBFT(spd):
 #    if (spd < 1.0):
 #        bft = '0'
 #    elif (spd >= 1.0) and (spd < 5.6):
@@ -491,63 +491,63 @@ def WIND_DIR(deg:int) ->int:
 #    return bft
 
 
-
 def FEELS_LIKE_C_KPH(Ts, Vs=0, Hs=0):
-    #xbmc.log('Running FEELS_LIKE_C_KPH: %s %s %s' % (Ts, Vs, Hs),level=xbmc.LOGERROR)
+    # xbmc.log('Running FEELS_LIKE_C_KPH: %s %s %s' % (Ts, Vs, Hs),level=xbmc.LOGERROR)
     if not Vs:
-        Vs=0
-    T=float(Ts)
-    V=float(Vs)
-    H=float(Hs)
+        Vs = 0
+    T = float(Ts)
+    V = float(Vs)
+    H = float(Hs)
     # first check if we have a wind-chill value
-    windchill =    WIND_CHILL_C_KPH(T, V)
-    if windchill and windchill < T :
+    windchill = WIND_CHILL_C_KPH(T, V)
+    if windchill and windchill < T:
         return windchill
     else:         # otherwise, check for heat index
         heatindex = HEAT_INDEX_C(T, H)
-        if heatindex and heatindex > T and heatindex > 80 :
+        if heatindex and heatindex > T and heatindex > 80:
             return heatindex
     # otherwise, neither windchill nor heatindex apply
-    #xbmc.log('FEELS_LIKE_C_KPH: Not Applicable',level=xbmc.LOGERROR)
+    # xbmc.log('FEELS_LIKE_C_KPH: Not Applicable',level=xbmc.LOGERROR)
     return
 
 
 def FEELS_LIKE_F_MPH(Ts, Vs=0, Hs=0):
-    #xbmc.log('Running FEELS_LIKE_F_MPH: %s %s %s' % (Ts, Vs, Hs),level=xbmc.LOGERROR)
+    # xbmc.log('Running FEELS_LIKE_F_MPH: %s %s %s' % (Ts, Vs, Hs),level=xbmc.LOGERROR)
 
     if not Vs:
-        Vs=0
-    T=float(Ts)
-    V=float(Vs)
-    H=float(Hs)
-    #xbmc.log('Running FEELS_LIKE_F_MPH: %s %s %s' % (T, V, H),level=xbmc.LOGERROR)
+        Vs = 0
+    T = float(Ts)
+    V = float(Vs)
+    H = float(Hs)
+    # xbmc.log('Running FEELS_LIKE_F_MPH: %s %s %s' % (T, V, H),level=xbmc.LOGERROR)
     # first check if we have a wind-chill value
     windchill = WIND_CHILL_F_MPH(T, V)
-    #xbmc.log('windchill returns: %s' % (windchill),level=xbmc.LOGERROR)
+    # xbmc.log('windchill returns: %s' % (windchill),level=xbmc.LOGERROR)
 
     if windchill and windchill < T:
         return windchill
     else:         # otherwise, check for heat index
         heatindex = HEAT_INDEX_F(T, H)
-        ##xbmc.log'heatindex returns: %s' % (heatindex),level=xbmc.LOGERROR)
+        # xbmc.log'heatindex returns: %s' % (heatindex),level=xbmc.LOGERROR)
 
-        if heatindex and heatindex > T+2 and heatindex > 80 :
+        if heatindex and heatindex > T+2 and heatindex > 80:
             return heatindex
     # otherwise, neither windchill nor heatindex apply
-    #xbmc.log('FEELS_LIKE_F_MPH: Not Applicable',level=xbmc.LOGERROR)
+    # xbmc.log('FEELS_LIKE_F_MPH: Not Applicable',level=xbmc.LOGERROR)
     return
 
 
 def WIND_CHILL_F_MPH(Ts, Vs):
-    T=float(Ts)
-    V=float(Vs)
-    ##xbmc.log('wind_chill_f_mph    %s %s' % (T, V),level=xbmc.LOGERROR)
+    T = float(Ts)
+    V = float(Vs)
+    # xbmc.log('wind_chill_f_mph    %s %s' % (T, V),level=xbmc.LOGERROR)
     if T <= 50.0 and V >= 3.0:
-        #xbmc.log('We are in windchill range %s' % (T),level=xbmc.LOGERROR)
-        WC=35.74 + (0.6215 * T) - (35.75 * math.pow(V,0.16)) + (0.4275 * T * math.pow(V,0.16))
-        ##xbmc.log('WindChill for %sF %s mph = %sF' % (T, V, WC),level=xbmc.LOGERROR)
+        # xbmc.log('We are in windchill range %s' % (T),level=xbmc.LOGERROR)
+        WC = 35.74 + (0.6215 * T) - (35.75 * math.pow(V, 0.16)) + \
+            (0.4275 * T * math.pow(V, 0.16))
+        # xbmc.log('WindChill for %sF %s mph = %sF' % (T, V, WC),level=xbmc.LOGERROR)
         if WC < T-2.0:
-            #xbmc.log('WindChill for %sF %s mph = %sF' % (T, V, WC),level=xbmc.LOGERROR)
+            # xbmc.log('WindChill for %sF %s mph = %sF' % (T, V, WC),level=xbmc.LOGERROR)
             return WC
 
     # otherwise, windchill is not relevant, so return
@@ -555,11 +555,11 @@ def WIND_CHILL_F_MPH(Ts, Vs):
 
 
 def WIND_CHILL_C_KPH(Ts, Vs):
-    T=float(Ts)
-    V=float(Vs)
+    T = float(Ts)
+    V = float(Vs)
     TF = CtoF(T)
     Vmph = V/1.609344
-    windchill=WIND_CHILL_F_MPH(TF,Vmph)
+    windchill = WIND_CHILL_F_MPH(TF, Vmph)
     if windchill:
         return FtoC(windchill)
     # otherwise, no windchill so return
@@ -568,67 +568,70 @@ def WIND_CHILL_C_KPH(Ts, Vs):
 
 # https://www.wpc.ncep.noaa.gov/html/heatindex_equation.shtml
 def HEAT_INDEX_F(Ts, Rs):
-    T=float(Ts)
-    R=float(Rs)
-    ##xbmc.log'Heat_index_F %sF %s' % (T, R),level=xbmc.LOGERROR)
-    if T <40:    # too cold for heat indexes
+    T = float(Ts)
+    R = float(Rs)
+    # xbmc.log'Heat_index_F %sF %s' % (T, R),level=xbmc.LOGERROR)
+    if T < 40:    # too cold for heat indexes
         return
     # Try simple formula first
     HI = 0.5 * (T + 61.0 + ((T-68.0)*1.2) + (R*0.094))
-    ##xbmc.log'Initial HI is %sF' % (HI),level=xbmc.LOGERROR)
+    # xbmc.log'Initial HI is %sF' % (HI),level=xbmc.LOGERROR)
     # Test if simply formula is applicable
     if HI > 80:    # then we need to use the full fancy formula
-        ##xbmc.log'HI is over 80 %sF' % (HI),level=xbmc.LOGERROR)
-        HI = ( -42.379
-               + 2.04901523*T
-               + 10.14333127*R
-               - .22475541*T*R
-               - .00683783*T*T
-               - .05481717*R*R
-               + .00122874*T*T*R
-               + .00085282*T*R*R
-               - .00000199*T*T*R*R
-             )
-        ##xbmc.log('Fancy hi 1 is %sF' % (HI),level=xbmc.LOGERROR)
-        if R < 12 and T >80 and T <115:
-            ADJUSTMENT = ( (13.0-R)/4.0 ) * math.sqrt( ( 17.0-math.fabs( T-95.0) ) / 17.0 )
+        # xbmc.log'HI is over 80 %sF' % (HI),level=xbmc.LOGERROR)
+        HI = (-42.379
+              + 2.04901523*T
+              + 10.14333127*R
+              - .22475541*T*R
+              - .00683783*T*T
+              - .05481717*R*R
+              + .00122874*T*T*R
+              + .00085282*T*R*R
+              - .00000199*T*T*R*R
+              )
+        # xbmc.log('Fancy hi 1 is %sF' % (HI),level=xbmc.LOGERROR)
+        if R < 12 and T > 80 and T < 115:
+            ADJUSTMENT = ((13.0-R)/4.0) * \
+                math.sqrt((17.0-math.fabs(T-95.0)) / 17.0)
             HI = HI - ADJUSTMENT
-            ##xbmc.log('adjusted hi 2 is %sF' % (HI),level=xbmc.LOGERROR)
-        if R > 85 and T >80 and T <87:
-            ADJUSTMENT = ( (R-85.0)/10.0 ) * ( (87.0-T)/5.0 )
+            # xbmc.log('adjusted hi 2 is %sF' % (HI),level=xbmc.LOGERROR)
+        if R > 85 and T > 80 and T < 87:
+            ADJUSTMENT = ((R-85.0)/10.0) * ((87.0-T)/5.0)
             HI = HI + ADJUSTMENT
-            ##xbmc.log('adjusted hi 3 is %sF' % (HI),level=xbmc.LOGERROR)
-    ##xbmc.log'Final HI is %sF' % (HI),level=xbmc.LOGERROR)
-    if HI > 80 and HI > (T+2):    # if we have a heat-index, over 80 (and it's highter then the normal temp) then return it
-        ##xbmc.log'Heat Index for %sF %sH = %sF' % (T, R, HI),level=xbmc.LOGERROR)
+            # xbmc.log('adjusted hi 3 is %sF' % (HI),level=xbmc.LOGERROR)
+    # xbmc.log'Final HI is %sF' % (HI),level=xbmc.LOGERROR)
+    # if we have a heat-index, over 80 (and it's highter then the normal temp) then return it
+    if HI > 80 and HI > (T+2):
+        # xbmc.log'Heat Index for %sF %sH = %sF' % (T, R, HI),level=xbmc.LOGERROR)
         return HI
 
+
 def HEAT_INDEX_C(Ts, Rs):
-    T=float(Ts)
-    R=float(Rs)
-    TF = CtoF(T) # calaculation is done in F
+    T = float(Ts)
+    R = float(Rs)
+    TF = CtoF(T)  # calaculation is done in F
     HI = HEAT_INDEX_F(TF, R)
     if HI:
         return FtoC(HI)
     # otherwise, no relevennt heat index so return
 
 
-#### thanks to FrostBox @ http://forum.kodi.tv/showthread.php?tid=114637&pid=937168#pid937168
-def DEW_POINT(Tc=0.0, R=93.0, ext=True, minR=( 0, 0.075 )[ 0 ]):
-    Es = 6.11 * math.pow(10.0,( 7.5 * Tc / ( 237.7 + Tc ) ))
+# thanks to FrostBox @ http://forum.kodi.tv/showthread.php?tid=114637&pid=937168#pid937168
+def DEW_POINT(Tc=0.0, R=93.0, ext=True, minR=(0, 0.075)[0]):
+    Es = 6.11 * math.pow(10.0, (7.5 * Tc / (237.7 + Tc)))
     R = R or minR
-    E = ( R * Es ) / 100.0
+    E = (R * Es) / 100.0
     try:
-        DewPoint = ( -430.22 + 237.7 * math.log( E ) ) / ( -math.log( E ) + 19.08 )
+        DewPoint = (-430.22 + 237.7 * math.log(E)) / (-math.log(E) + 19.08)
     except ValueError:
         DewPoint = 0
     if ext:
-        return TEMP( DewPoint )
+        return TEMP(DewPoint)
     else:
         return str(int(round(DewPoint)))
 
 
-## a couple functions from itertools
+# a couple functions from itertools
 def repeat_x(object_x, times=None):
     # repeat(10, 3) --> 10 10 10
     if times is None:
@@ -637,6 +640,7 @@ def repeat_x(object_x, times=None):
     else:
         for i in range(times):
             yield object_x
+
 
 def zip_x(fill, *args):
     # zip_longest('ABCD', 'xy', fillvalue='-') --> Ax By C- D-
@@ -658,10 +662,11 @@ def zip_x(fill, *args):
             values.append(value)
         yield tuple(values)
 
+
 def get_timestamp(datestr):
-    #"2019-04-29T16:00:00-04:00"
-    #iso_fmt = '%Y-%m-%dT%H:%M:%S%z'
-    datestamp=parse(datestr)
+    # "2019-04-29T16:00:00-04:00"
+    # iso_fmt = '%Y-%m-%dT%H:%M:%S%z'
+    datestamp = parse(datestr)
     return time.mktime(datestamp.timetuple())
 
 
@@ -682,6 +687,7 @@ def convert_date(stamp):
         localtime = time.strftime('%H:%M', date_time)
     return localtime + '    ' + localdate
 
+
 def get_time(stamp):
     date_time = time.localtime(stamp)
     if TIMEFORMAT != '/':
@@ -690,7 +696,8 @@ def get_time(stamp):
         localtime = time.strftime('%H:%M', date_time)
     return localtime
 
-def get_weekday(stamp, form) ->str:
+
+def get_weekday(stamp, form) -> str:
     date_time = time.localtime(stamp)
     weekday = time.strftime('%w', date_time)
     if form == 's':
@@ -698,10 +705,10 @@ def get_weekday(stamp, form) ->str:
     elif form == 'l':
         return xbmc.getLocalizedString(WEEK_DAY_LONG[weekday])
     else:
-        #return int(weekday)
+        # return int(weekday)
         return weekday
 
-#def get_month(stamp, form):
+# def get_month(stamp, form):
 #    date_time = time.localtime(stamp)
 #    month = time.strftime('%m', date_time)
 #    day = time.strftime('%d', date_time)
@@ -716,518 +723,525 @@ def get_weekday(stamp, form) ->str:
 #        label = xbmc.getLocalizedString(MONTH_NAME_LONG[month])
 #    return label
 
-def get_fulldatestr(stamp,form):
+
+def get_fulldatestr(stamp, form):
     date_time = time.localtime(stamp)
     month = time.strftime('%m', date_time)
     day = time.strftime('%d', date_time)
     weekday = time.strftime('%w', date_time)
+    label = ''
     if form == 'ds':
-        label = xbmc.getLocalizedString(WEEK_DAY_SHORT[weekday]) + ' ' + day + ' ' + xbmc.getLocalizedString(MONTH_NAME_SHORT[month])
+        label = f"{xbmc.getLocalizedString(WEEK_DAY_SHORT[weekday])}  {day} "\
+                f"{xbmc.getLocalizedString(MONTH_NAME_SHORT[month])}"
     elif form == 'dl':
-        label = xbmc.getLocalizedString(WEEK_DAY_LONG[weekday]) + ' ' + day + ' ' + xbmc.getLocalizedString(MONTH_NAME_LONG[month])
+        label = f"{xbmc.getLocalizedString(WEEK_DAY_LONG[weekday])} {day} "\
+                f"{xbmc.getLocalizedString(MONTH_NAME_LONG[month])}"
     elif form == 'ms':
-        label = xbmc.getLocalizedString(WEEK_DAY_SHORT[weekday]) + ' ' + xbmc.getLocalizedString(MONTH_NAME_SHORT[month]) + ' ' + day
+        label = f"{xbmc.getLocalizedString(WEEK_DAY_SHORT[weekday])} "\
+                f"{xbmc.getLocalizedString(MONTH_NAME_SHORT[month])} {day}"
     elif form == 'ml':
-        label = xbmc.getLocalizedString(WEEK_DAY_LONG[weekday]) + ' ' + xbmc.getLocalizedString(MONTH_NAME_LONG[month]) + ' ' + day
+        label = f"{xbmc.getLocalizedString(WEEK_DAY_LONG[weekday])} "\
+                f"{xbmc.getLocalizedString(MONTH_NAME_LONG[month])} {day}"
     return label
 
-def get_datestr(stamp,form):
+
+def get_datestr(stamp, form):
     date_time = time.localtime(stamp)
     month = time.strftime('%m', date_time)
     day = time.strftime('%d', date_time)
+    label = ''
     if form == 'ds':
-        label = day + ' ' + xbmc.getLocalizedString(MONTH_NAME_SHORT[month])
+        label = f"{day} {xbmc.getLocalizedString(MONTH_NAME_SHORT[month])}"
     elif form == 'dl':
-        label = day + ' ' + xbmc.getLocalizedString(MONTH_NAME_LONG[month])
+        label = f"{day} {xbmc.getLocalizedString(MONTH_NAME_LONG[month])}"
     elif form == 'ms':
-        label = xbmc.getLocalizedString(MONTH_NAME_SHORT[month]) + ' ' + day
+        label = f"{xbmc.getLocalizedString(MONTH_NAME_SHORT[month])} {day}"
     elif form == 'ml':
-        label = xbmc.getLocalizedString(MONTH_NAME_LONG[month]) + ' ' + day
+        label = f"{xbmc.getLocalizedString(MONTH_NAME_LONG[month])} {day}"
     return label
 
 # Satellite Imagery paths
 
 
-
 MAPSECTORS = {
     "conus-e": {
-        "name":LANGUAGE(32360),
-        "sat":"GOES19",
-        "loc":"CONUS",
-        "static":"1250x750.jpg",
-        "loop":"625x375.gif",
+        "name": LANGUAGE(32360),
+        "sat": "GOES19",
+        "loc": "CONUS",
+        "static": "1250x750.jpg",
+        "loop": "625x375.gif",
     },
     "conus-w": {
-        "name":LANGUAGE(32361),
-        "path":"GOES18/%s/CONUS/%s/1250x750.jpg",
-        "sat":"GOES18",
-        "loc":"CONUS",
-        "static":"1250x750.jpg",
-        "loop":"625x375.gif",
+        "name": LANGUAGE(32361),
+        "path": "GOES18/%s/CONUS/%s/1250x750.jpg",
+        "sat": "GOES18",
+        "loc": "CONUS",
+        "static": "1250x750.jpg",
+        "loop": "625x375.gif",
     },
     "ak": {
-        "name":LANGUAGE(32364), 
-        "path":"GOES18/ABI/SECTOR/ak/%s/1000x1000.jpg",
-        "sat":"GOES18",
-        "loc":"AK",
-        "static":"1000x1000.jpg",
-        "loop":"1000x1000.gif",
+        "name": LANGUAGE(32364),
+        "path": "GOES18/ABI/SECTOR/ak/%s/1000x1000.jpg",
+        "sat": "GOES18",
+        "loc": "AK",
+        "static": "1000x1000.jpg",
+        "loop": "1000x1000.gif",
     },
     "cak": {
-        "name":LANGUAGE(32365),
-        "path":"GOES18/ABI/SECTOR/cak/%s/1200x1200.jpg",
-        "sat":"GOES18",
-        "loc":"CAK",
-        "static":"1200x1200.jpg",
-        "loop":"600x600.gif",
-        },
+        "name": LANGUAGE(32365),
+        "path": "GOES18/ABI/SECTOR/cak/%s/1200x1200.jpg",
+        "sat": "GOES18",
+        "loc": "CAK",
+        "static": "1200x1200.jpg",
+        "loop": "600x600.gif",
+    },
     "sea": {
-        "name":LANGUAGE(32366),
-        "path":"GOES18/ABI/SECTOR/sea/%s/1200x1200.jpg",
-        "sat":"GOES18",
-        "loc":"SEA",
-        "static":"1200x1200.jpg",
-        "loop":"600x600.gif",
-        },
+        "name": LANGUAGE(32366),
+        "path": "GOES18/ABI/SECTOR/sea/%s/1200x1200.jpg",
+        "sat": "GOES18",
+        "loc": "SEA",
+        "static": "1200x1200.jpg",
+        "loop": "600x600.gif",
+    },
     "np": {
-        "name":LANGUAGE(32367),
-         "path":"GOES18/ABI/SECTOR/np/%s/900x540.jpg",
-        "sat":"GOES18",
-        "loc":"NP",
-        "static":"900x540.jpg",
-        "loop":"900x540.gif",
-        },
+        "name": LANGUAGE(32367),
+        "path": "GOES18/ABI/SECTOR/np/%s/900x540.jpg",
+        "sat": "GOES18",
+        "loc": "NP",
+        "static": "900x540.jpg",
+        "loop": "900x540.gif",
+    },
     "wus": {
-        "name":LANGUAGE(32368),
-        "path":"GOES18/ABI/SECTOR/wus/%s/1000x1000.jpg",
-        "sat":"GOES18",
-        "loc":"WUS",
-        "static":"1000x1000.jpg",
-        "loop":"1000x1000.gif",
-        },
+        "name": LANGUAGE(32368),
+        "path": "GOES18/ABI/SECTOR/wus/%s/1000x1000.jpg",
+        "sat": "GOES18",
+        "loc": "WUS",
+        "static": "1000x1000.jpg",
+        "loop": "1000x1000.gif",
+    },
     "pnw-w": {
-        "name":LANGUAGE(32369),
-        "path":"GOES18/ABI/SECTOR/pnw/%s/1200x1200.jpg",
-        "sat":"GOES18",
-        "loc":"PNW",
-        "static":"1200x1200.jpg",
-        "loop":"600x600.gif",
-        },
+        "name": LANGUAGE(32369),
+        "path": "GOES18/ABI/SECTOR/pnw/%s/1200x1200.jpg",
+        "sat": "GOES18",
+        "loc": "PNW",
+        "static": "1200x1200.jpg",
+        "loop": "600x600.gif",
+    },
     "pnw-e": {
-        "name":LANGUAGE(32370),
-         "path":"GOES19/ABI/SECTOR/pnw/%s/1200x1200.jpg",
-        "sat":"GOES19",
-        "loc":"PNW",
-        "static":"1200x1200.jpg",
-        "loop":"600x600.gif",
-        },
+        "name": LANGUAGE(32370),
+        "path": "GOES19/ABI/SECTOR/pnw/%s/1200x1200.jpg",
+        "sat": "GOES19",
+        "loc": "PNW",
+        "static": "1200x1200.jpg",
+        "loop": "600x600.gif",
+    },
     "psw-w": {
-        "name":LANGUAGE(32371),
-        "path":"GOES18/ABI/SECTOR/psw/%s/1200x1200.jpg",
-        "sat":"GOES18",
-        "loc":"PSW",
-        "static":"1200x1200.jpg",
-        "loop":"600x600.gif",
-        },
+        "name": LANGUAGE(32371),
+        "path": "GOES18/ABI/SECTOR/psw/%s/1200x1200.jpg",
+        "sat": "GOES18",
+        "loc": "PSW",
+        "static": "1200x1200.jpg",
+        "loop": "600x600.gif",
+    },
     "psw-e": {
-        "name":LANGUAGE(32371),
-         "path":"GOES19/ABI/SECTOR/psw/%s/1200x1200.jpg",
-        "sat":"GOES19",
-        "loc":"PSW",
-        "static":"1200x1200.jpg",
-        "loop":"600x600.gif",
-        },
+        "name": LANGUAGE(32371),
+        "path": "GOES19/ABI/SECTOR/psw/%s/1200x1200.jpg",
+        "sat": "GOES19",
+        "loc": "PSW",
+        "static": "1200x1200.jpg",
+        "loop": "600x600.gif",
+    },
     "nr": {
-        "name":LANGUAGE(32373),
-        "path":"GOES19/ABI/SECTOR/nr/%s/1200x1200.jpg",
-        "sat":"GOES19",
-        "loc":"NR",
-        "static":"1200x1200.jpg",
-        "loop":"600x600.gif",
-        },
+        "name": LANGUAGE(32373),
+        "path": "GOES19/ABI/SECTOR/nr/%s/1200x1200.jpg",
+        "sat": "GOES19",
+        "loc": "NR",
+        "static": "1200x1200.jpg",
+        "loop": "600x600.gif",
+    },
     "sr": {
-        "name":LANGUAGE(32374),
-        "path":"GOES19/ABI/SECTOR/sr/%s/1200x1200.jpg",
-        "sat":"GOES19",
-        "loc":"SR",
-        "static":"1200x1200.jpg",
-        "loop":"600x600.gif",
-        },
+        "name": LANGUAGE(32374),
+        "path": "GOES19/ABI/SECTOR/sr/%s/1200x1200.jpg",
+        "sat": "GOES19",
+        "loc": "SR",
+        "static": "1200x1200.jpg",
+        "loop": "600x600.gif",
+    },
     "sp": {
-        "name":LANGUAGE(32375),
-         "path":"GOES19/ABI/SECTOR/sp/%s/1200x1200.jpg",
-        "sat":"GOES19",
-        "loc":"SP",
-        "static":"1200x1200.jpg",
-        "loop":"600x600.gif",
-        },
+        "name": LANGUAGE(32375),
+        "path": "GOES19/ABI/SECTOR/sp/%s/1200x1200.jpg",
+        "sat": "GOES19",
+        "loc": "SP",
+        "static": "1200x1200.jpg",
+        "loop": "600x600.gif",
+    },
     "umv": {
-        "name":LANGUAGE(32376),
-         "path":"GOES19/ABI/SECTOR/umv/%s/1200x1200.jpg",
-        "sat":"GOES19",
-        "loc":"UMV",
-        "static":"1200x1200.jpg",
-        "loop":"600x600.gif",
-        },
+        "name": LANGUAGE(32376),
+        "path": "GOES19/ABI/SECTOR/umv/%s/1200x1200.jpg",
+        "sat": "GOES19",
+        "loc": "UMV",
+        "static": "1200x1200.jpg",
+        "loop": "600x600.gif",
+    },
     "smv": {
-        "name":LANGUAGE(32377),
-         "path":"GOES19/ABI/SECTOR/smv/%s/1200x1200.jpg",
-        "sat":"GOES19",
-        "loc":"SMV",
-        "static":"1200x1200.jpg",
-        "loop":"600x600.gif",
-        },
+        "name": LANGUAGE(32377),
+        "path": "GOES19/ABI/SECTOR/smv/%s/1200x1200.jpg",
+        "sat": "GOES19",
+        "loc": "SMV",
+        "static": "1200x1200.jpg",
+        "loop": "600x600.gif",
+    },
     "can": {
-        "name":LANGUAGE(32378),
-        "path":"GOES19/ABI/SECTOR/can/%s/1125x560.jpg",
-        "sat":"GOES19",
-        "loc":"CAN",
-        "static":"1125x560.jpg",
-        "loop":"1125x560.gif",
-        },
+        "name": LANGUAGE(32378),
+        "path": "GOES19/ABI/SECTOR/can/%s/1125x560.jpg",
+        "sat": "GOES19",
+        "loc": "CAN",
+        "static": "1125x560.jpg",
+        "loop": "1125x560.gif",
+    },
     "cgl": {
-        "name":LANGUAGE(32379),
-         "path":"GOES19/ABI/SECTOR/cgl/%s/1200x1200.jpg",
-        "sat":"GOES19",
-        "loc":"CGL",
-        "static":"1200x1200.jpg",
-        "loop":"600x600.gif",
-        },
+        "name": LANGUAGE(32379),
+        "path": "GOES19/ABI/SECTOR/cgl/%s/1200x1200.jpg",
+        "sat": "GOES19",
+        "loc": "CGL",
+        "static": "1200x1200.jpg",
+        "loop": "600x600.gif",
+    },
     "eus": {
-        "name":LANGUAGE(32380),
-         "path":"GOES19/ABI/SECTOR/eus/%s/1000x1000.jpg",
-        "sat":"GOES19",
-        "loc":"EUS",
-        "static":"1000x1000.jpg",
-        "loop":"1000x1000.gif",
-        },
+        "name": LANGUAGE(32380),
+        "path": "GOES19/ABI/SECTOR/eus/%s/1000x1000.jpg",
+        "sat": "GOES19",
+        "loc": "EUS",
+        "static": "1000x1000.jpg",
+        "loop": "1000x1000.gif",
+    },
     "ne": {
-        "name":LANGUAGE(32381),
-        "path":"GOES19/ABI/SECTOR/ne/%s/1200x1200.jpg",
-        "sat":"GOES19",
-        "loc":"NE",
-        "static":"1200x1200.jpg",
-        "loop":"600x600.gif",
-        },
+        "name": LANGUAGE(32381),
+        "path": "GOES19/ABI/SECTOR/ne/%s/1200x1200.jpg",
+        "sat": "GOES19",
+        "loc": "NE",
+        "static": "1200x1200.jpg",
+        "loop": "600x600.gif",
+    },
 
     "na": {
-        "name":LANGUAGE(32382),
-        "path":"GOES19/ABI/SECTOR/na/%s/900x540.jpg",
-        "sat":"GOES19",
-        "loc":"NA",
-        "static":"900x540.jpg",
-        "loop":"900x540.gif",
-        },
+        "name": LANGUAGE(32382),
+        "path": "GOES19/ABI/SECTOR/na/%s/900x540.jpg",
+        "sat": "GOES19",
+        "loc": "NA",
+        "static": "900x540.jpg",
+        "loop": "900x540.gif",
+    },
     "se": {
-        "name":LANGUAGE(32383),
-         "path":"GOES19/ABI/SECTOR/se/%s/1200x1200.jpg",
-        "sat":"GOES19",
-        "loc":"SE",
-        "static":"1200x1200.jpg",
-        "loop":"600x600.gif",
-        },
+        "name": LANGUAGE(32383),
+        "path": "GOES19/ABI/SECTOR/se/%s/1200x1200.jpg",
+        "sat": "GOES19",
+        "loc": "SE",
+        "static": "1200x1200.jpg",
+        "loop": "600x600.gif",
+    },
     "car": {
-        "name":LANGUAGE(32384),
-        "path":"GOES19/ABI/SECTOR/car/%s/1000x1000.jpg",
-        "sat":"GOES19",
-        "loc":"CAR",
-        "static":"1000x1000.jpg",
-        "loop":"1000x1000.gif",
-        },
+        "name": LANGUAGE(32384),
+        "path": "GOES19/ABI/SECTOR/car/%s/1000x1000.jpg",
+        "sat": "GOES19",
+        "loc": "CAR",
+        "static": "1000x1000.jpg",
+        "loop": "1000x1000.gif",
+    },
     "pr": {
-        "name":LANGUAGE(32385),
-         "path":"GOES19/ABI/SECTOR/pr/%s/1200x1200.jpg",
-        "sat":"GOES19",
-        "loc":"PR",
-        "static":"1200x1200.jpg",
-        "loop":"600x600.gif",
-        },
+        "name": LANGUAGE(32385),
+        "path": "GOES19/ABI/SECTOR/pr/%s/1200x1200.jpg",
+        "sat": "GOES19",
+        "loc": "PR",
+        "static": "1200x1200.jpg",
+        "loop": "600x600.gif",
+    },
     "gm": {
-        "name":LANGUAGE(32386),
-         "path":"GOES19/ABI/SECTOR/ga/%s/1000x1000.jpg",
-        "sat":"GOES19",
-        "loc":"GA",
-        "static":"1000x1000.jpg",
-        "loop":"1000x1000.gif",
-        },
+        "name": LANGUAGE(32386),
+        "path": "GOES19/ABI/SECTOR/ga/%s/1000x1000.jpg",
+        "sat": "GOES19",
+        "loc": "GA",
+        "static": "1000x1000.jpg",
+        "loop": "1000x1000.gif",
+    },
     "taw": {
-        "name":LANGUAGE(32387),
-        "path":"GOES19/ABI/SECTOR/taw/%s/900x540.jpg",
-        "sat":"GOES19",
-        "loc":"TAW",
-        "static":"900x540.jpg",
-        "loop":"900x540.gif",
-        },
+        "name": LANGUAGE(32387),
+        "path": "GOES19/ABI/SECTOR/taw/%s/900x540.jpg",
+        "sat": "GOES19",
+        "loc": "TAW",
+        "static": "900x540.jpg",
+        "loop": "900x540.gif",
+    },
     "mex": {
-        "name":LANGUAGE(32388),
-         "path":"GOES19/ABI/SECTOR/mex/%s/1000x1000.jpg",
-        "sat":"GOES19",
-        "loc":"MEX",
-        "static":"1000x1000.jpg",
-        "loop":"1000x1000.gif",
-        },
+        "name": LANGUAGE(32388),
+        "path": "GOES19/ABI/SECTOR/mex/%s/1000x1000.jpg",
+        "sat": "GOES19",
+        "loc": "MEX",
+        "static": "1000x1000.jpg",
+        "loop": "1000x1000.gif",
+    },
     "hi": {
-        "name":LANGUAGE(32389),
-         "path":"GOES18/ABI/SECTOR/hi/%s/1200x1200.jpg",
-        "sat":"GOES18",
-        "loc":"HI",
-        "static":"1200x1200.jpg",
-        "loop":"600x600.gif",
-        },
+        "name": LANGUAGE(32389),
+        "path": "GOES18/ABI/SECTOR/hi/%s/1200x1200.jpg",
+        "sat": "GOES18",
+        "loc": "HI",
+        "static": "1200x1200.jpg",
+        "loop": "600x600.gif",
+    },
     "tpw": {
-        "name":LANGUAGE(32390),
-         "path":"GOES18/ABI/SECTOR/tpw/%s/900x540.jpg",
-        "sat":"GOES18",
-        "loc":"TPW",
-        "static":"900x540.jpg",
-        "loop":"900x540.gif",
-        },
+        "name": LANGUAGE(32390),
+        "path": "GOES18/ABI/SECTOR/tpw/%s/900x540.jpg",
+        "sat": "GOES18",
+        "loc": "TPW",
+        "static": "900x540.jpg",
+        "loop": "900x540.gif",
+    },
     "tsp": {
-        "name":LANGUAGE(32391),
-         "path":"GOES18/ABI/SECTOR/tsp/%s/900x540.jpg",
-        "sat":"GOES18",
-        "loc":"TSP",
-        "static":"900x540.jpg",
-        "loop":"900x540.gif",
-        },
+        "name": LANGUAGE(32391),
+        "path": "GOES18/ABI/SECTOR/tsp/%s/900x540.jpg",
+        "sat": "GOES18",
+        "loc": "TSP",
+        "static": "900x540.jpg",
+        "loop": "900x540.gif",
+    },
     "eep": {
-        "name":LANGUAGE(32392),
-        "path":"GOES19/ABI/SECTOR/eep/%s/900x540.jpg",
-        "sat":"GOES19",
-        "loc":"EEP",
-        "static":"900x540.jpg",
-        "loop":"900x540.gif",
-        },
+        "name": LANGUAGE(32392),
+        "path": "GOES19/ABI/SECTOR/eep/%s/900x540.jpg",
+        "sat": "GOES19",
+        "loc": "EEP",
+        "static": "900x540.jpg",
+        "loop": "900x540.gif",
+    },
     "cam": {
-        "name":LANGUAGE(32393),
-        "path":"GOES19/ABI/SECTOR/cam/%s/1000x1000.jpg",
-        "sat":"GOES19",
-        "loc":"CAM",
-        "static":"1000x1000.jpg",
-        "loop":"1000x1000.gif",
-        },
+        "name": LANGUAGE(32393),
+        "path": "GOES19/ABI/SECTOR/cam/%s/1000x1000.jpg",
+        "sat": "GOES19",
+        "loc": "CAM",
+        "static": "1000x1000.jpg",
+        "loop": "1000x1000.gif",
+    },
     "nsa": {
-        "name":LANGUAGE(32394),
-        "path":"GOES19/ABI/SECTOR/nsa/%s/900x540.jpg",
-        "sat":"GOES19",
-        "loc":"NSA",
-        "static":"900x540.jpg",
-        "loop":"900x540.gif",
-        },
+        "name": LANGUAGE(32394),
+        "path": "GOES19/ABI/SECTOR/nsa/%s/900x540.jpg",
+        "sat": "GOES19",
+        "loc": "NSA",
+        "static": "900x540.jpg",
+        "loop": "900x540.gif",
+    },
     "ssa": {
-        "name":LANGUAGE(32395),
-        "path":"GOES19/ABI/SECTOR/ssa/%s/900x540.jpg",
-        "sat":"GOES19",
-        "loc":"SSA",
-        "static":"900x540.jpg",
-        "loop":"900x540.gif",
-        }
+        "name": LANGUAGE(32395),
+        "path": "GOES19/ABI/SECTOR/ssa/%s/900x540.jpg",
+        "sat": "GOES19",
+        "loc": "SSA",
+        "static": "900x540.jpg",
+        "loop": "900x540.gif",
     }
+}
 
 MAPTYPES = {
     "RADAR_LOOP": {
-        "name":LANGUAGE(32333),
-        "type":"RADAR",
-        "subtype":"",
-        "imagetype":"loop",
-        },
+        "name": LANGUAGE(32333),
+        "type": "RADAR",
+        "subtype": "",
+        "imagetype": "loop",
+    },
     "GEOCOLOR": {
-        "name":LANGUAGE(32400),
-        "type":"ABI",
-        "subtype":"GEOCOLOR",
-        "imagetype":"static",
-        },
+        "name": LANGUAGE(32400),
+        "type": "ABI",
+        "subtype": "GEOCOLOR",
+        "imagetype": "static",
+    },
     "GEOCOLOR_LOOP": {
-        "name":LANGUAGE(32403),
-        "type":"ABI",
-        "subtype":"GEOCOLOR",
-        "imagetype":"loop",
-        },
+        "name": LANGUAGE(32403),
+        "type": "ABI",
+        "subtype": "GEOCOLOR",
+        "imagetype": "loop",
+    },
     "EXTENT": {
-        "name":LANGUAGE(32401),
-        "type":"GLM",
-        "subtype":"EXTENT3",
-        "imagetype":"static",
-        },
+        "name": LANGUAGE(32401),
+        "type": "GLM",
+        "subtype": "EXTENT3",
+        "imagetype": "static",
+    },
     "EXTENT_LOOP": {
-        "name":LANGUAGE(32425),
-        "type":"GLM",
-        "subtype":"EXTENT3",
-        "imagetype":"loop",
-        },
+        "name": LANGUAGE(32425),
+        "type": "GLM",
+        "subtype": "EXTENT3",
+        "imagetype": "loop",
+    },
     "AirMass": {
-        "name":LANGUAGE(32404),
-        "type":"ABI",
-        "subtype":"AirMass",
-        "imagetype":"static",
-        },
+        "name": LANGUAGE(32404),
+        "type": "ABI",
+        "subtype": "AirMass",
+        "imagetype": "static",
+    },
     "AirMass_LOOP": {
-        "name":LANGUAGE(32426),
-        "type":"ABI",
-        "subtype":"AirMass",
-        "imagetype":"loop",
-        },
+        "name": LANGUAGE(32426),
+        "type": "ABI",
+        "subtype": "AirMass",
+        "imagetype": "loop",
+    },
     "DMW": {
-        "name":LANGUAGE(32407),
-        "type":"ABI",
-        "subtype":"DMW",
-        "imagetype":"static",
-        },
+        "name": LANGUAGE(32407),
+        "type": "ABI",
+        "subtype": "DMW",
+        "imagetype": "static",
+    },
     "DayNightCloudMicroCombo": {
-        "name":LANGUAGE(32427),
-        "type":"ABI",
-        "subtype":"DayNightCloudMicroCombo",
-        "imagetype":"static",
-        },
+        "name": LANGUAGE(32427),
+        "type": "ABI",
+        "subtype": "DayNightCloudMicroCombo",
+        "imagetype": "static",
+    },
     "DayNightCloudMicroCombo_LOOP": {
-        "name":LANGUAGE(32428),
-        "type":"ABI",
-        "subtype":"DayNightCloudMicroCombo",
-        "imagetype":"loop",
-        },
+        "name": LANGUAGE(32428),
+        "type": "ABI",
+        "subtype": "DayNightCloudMicroCombo",
+        "imagetype": "loop",
+    },
     "Dust": {
-        "name":LANGUAGE(32408),
-        "type":"ABI",
-        "subtype":"Dust",
-        "imagetype":"static",
-        },
+        "name": LANGUAGE(32408),
+        "type": "ABI",
+        "subtype": "Dust",
+        "imagetype": "static",
+    },
     "FireTemperature": {
-        "name":LANGUAGE(32405),
-        "type":"ABI",
-        "subtype":"FireTemperature",
-        "imagetype":"static",
-        },
+        "name": LANGUAGE(32405),
+        "type": "ABI",
+        "subtype": "FireTemperature",
+        "imagetype": "static",
+    },
     "FireTemperature_LOOP": {
-        "name":LANGUAGE(32429),
-        "type":"ABI",
-        "subtype":"FireTemperature",
-        "imagetype":"loop",
-        },
+        "name": LANGUAGE(32429),
+        "type": "ABI",
+        "subtype": "FireTemperature",
+        "imagetype": "loop",
+    },
     "Sandwich": {
-        "name":LANGUAGE(32402),
-        "type":"ABI",
-        "subtype":"Sandwich",
-        "imagetype":"static",
-        },
+        "name": LANGUAGE(32402),
+        "type": "ABI",
+        "subtype": "Sandwich",
+        "imagetype": "static",
+    },
     "Sandwich_LOOP": {
-        "name":LANGUAGE(32430),
-        "type":"ABI",
-        "subtype":"Sandwich",
-        "imagetype":"loop",
-        },
+        "name": LANGUAGE(32430),
+        "type": "ABI",
+        "subtype": "Sandwich",
+        "imagetype": "loop",
+    },
     "01": {
-        "name":LANGUAGE(32409),
-        "type":"ABI",
-        "subtype":"01",
-        "imagetype":"static",
-        },
+        "name": LANGUAGE(32409),
+        "type": "ABI",
+        "subtype": "01",
+        "imagetype": "static",
+    },
     "02": {
-        "name":LANGUAGE(32410),
-        "type":"ABI",
-        "subtype":"02",
-        "imagetype":"static",
-        },
+        "name": LANGUAGE(32410),
+        "type": "ABI",
+        "subtype": "02",
+        "imagetype": "static",
+    },
     "03": {
         "name": LANGUAGE(32411),
-        "type":"ABI",
-        "subtype":"03",
-        "imagetype":"static",
-        },
+        "type": "ABI",
+        "subtype": "03",
+        "imagetype": "static",
+    },
     "04": {
         "name": LANGUAGE(32412),
-        "type":"ABI",
-        "subtype":"04",
-        "imagetype":"static",
-        },
+        "type": "ABI",
+        "subtype": "04",
+        "imagetype": "static",
+    },
     "05": {
         "name": LANGUAGE(32413),
-        "type":"ABI",
-        "subtype":"05",
-        "imagetype":"static",
-        },
+        "type": "ABI",
+        "subtype": "05",
+        "imagetype": "static",
+    },
     "06": {
         "name": LANGUAGE(32414),
-        "type":"ABI",
-        "subtype":"06",
-        "imagetype":"static",
-        },
+        "type": "ABI",
+        "subtype": "06",
+        "imagetype": "static",
+    },
     "07": {
         "name": LANGUAGE(32415),
-        "type":"ABI",
-        "subtype":"07",
-        "imagetype":"static",
-        },
+        "type": "ABI",
+        "subtype": "07",
+        "imagetype": "static",
+    },
     "08": {
         "name": LANGUAGE(32416),
-        "type":"ABI",
-        "subtype":"08",
-        "imagetype":"static",
-        },
+        "type": "ABI",
+        "subtype": "08",
+        "imagetype": "static",
+    },
     "09": {
         "name": LANGUAGE(32417),
-        "type":"ABI",
-        "subtype":"09",
-        "imagetype":"static",
-        },
+        "type": "ABI",
+        "subtype": "09",
+        "imagetype": "static",
+    },
     "10": {
         "name": LANGUAGE(32418),
-        "type":"ABI",
-        "subtype":"10",
-        "imagetype":"static",
-        },
+        "type": "ABI",
+        "subtype": "10",
+        "imagetype": "static",
+    },
     "11": {
         "name": LANGUAGE(32419),
-        "type":"ABI",
-        "subtype":"11",
-        "imagetype":"static",
-        },
+        "type": "ABI",
+        "subtype": "11",
+        "imagetype": "static",
+    },
     "12": {
         "name": LANGUAGE(32420),
-        "type":"ABI",
-        "subtype":"12",
-        "imagetype":"static",
-        },
+        "type": "ABI",
+        "subtype": "12",
+        "imagetype": "static",
+    },
     "13": {
         "name": LANGUAGE(32421),
-        "type":"ABI",
-        "subtype":"13",
-        "imagetype":"static",
-        },
+        "type": "ABI",
+        "subtype": "13",
+        "imagetype": "static",
+    },
     "14": {
         "name": LANGUAGE(32422),
-        "type":"ABI",
-        "subtype":"14",
-        "imagetype":"static",
-        },
+        "type": "ABI",
+        "subtype": "14",
+        "imagetype": "static",
+    },
     "15": {
         "name": LANGUAGE(32423),
-        "type":"ABI",
-        "subtype":"15",
-        "imagetype":"static",
-        },
+        "type": "ABI",
+        "subtype": "15",
+        "imagetype": "static",
+    },
     "16": {
         "name": LANGUAGE(32424),
-        "type":"ABI",
-        "subtype":"16",
-        "imagetype":"static",
-        },
-    }
+        "type": "ABI",
+        "subtype": "16",
+        "imagetype": "static",
+    },
+}
 
 LOOPSECTORS = {
-    ##ridge/standard/CONUS_loop.gif
-    "us":    {"name":LANGUAGE(32396),"path":"ridge/standard/CONUS-LARGE_loop.gif"},
-    "pnw":   {"name":LANGUAGE(32369),"path":"ridge/standard/PACNORTHWEST_loop.gif"},
-    "psw":   {"name":LANGUAGE(32371),"path":"ridge/standard/PACSOUTHWEST_loop.gif"},
-    "nr":    {"name":LANGUAGE(32373),"path":"ridge/standard/NORTHROCKIES_loop.gif"},
-    "sr":    {"name":LANGUAGE(32374),"path":"ridge/standard/SOUTHROCKIES_loop.gif"},
-    "sp":    {"name":LANGUAGE(32375),"path":"ridge/standard/SOUTHPLAINS_loop.gif"},
-    "umv":   {"name":LANGUAGE(32376),"path":"ridge/standard/UPPERMISSVLY_loop.gif"},
-    "smv":   {"name":LANGUAGE(32377),"path":"ridge/standard/SOUTHMISSVLY_loop.gif"},
-    "cgl":   {"name":LANGUAGE(32379),"path":"ridge/standard/CENTGRLAKES_loop.gif"},
-    "ne":    {"name":LANGUAGE(32381),"path":"ridge/standard/NORTHEAST_loop.gif"},
-    "se":    {"name":LANGUAGE(32383),"path":"ridge/standard/SOUTHEAST_loop.gif"},
-    "car":   {"name":LANGUAGE(32384),"path":"ridge/standard/CARIB_loop.gif"},
-    "ak":    {"name":LANGUAGE(32364),"path":"ridge/standard/ALASKA_loop.gif"},
-    "hi":    {"name":LANGUAGE(32389),"path":"ridge/standard/HAWAII_loop.gif"},
-    "guam":  {"name":LANGUAGE(32397),"path":"ridge/standard/GUAM_loop.gif"}
-    }
+    # ridge/standard/CONUS_loop.gif
+    "us":    {"name": LANGUAGE(32396), "path": "ridge/standard/CONUS-LARGE_loop.gif"},
+    "pnw":   {"name": LANGUAGE(32369), "path": "ridge/standard/PACNORTHWEST_loop.gif"},
+    "psw":   {"name": LANGUAGE(32371), "path": "ridge/standard/PACSOUTHWEST_loop.gif"},
+    "nr":    {"name": LANGUAGE(32373), "path": "ridge/standard/NORTHROCKIES_loop.gif"},
+    "sr":    {"name": LANGUAGE(32374), "path": "ridge/standard/SOUTHROCKIES_loop.gif"},
+    "sp":    {"name": LANGUAGE(32375), "path": "ridge/standard/SOUTHPLAINS_loop.gif"},
+    "umv":   {"name": LANGUAGE(32376), "path": "ridge/standard/UPPERMISSVLY_loop.gif"},
+    "smv":   {"name": LANGUAGE(32377), "path": "ridge/standard/SOUTHMISSVLY_loop.gif"},
+    "cgl":   {"name": LANGUAGE(32379), "path": "ridge/standard/CENTGRLAKES_loop.gif"},
+    "ne":    {"name": LANGUAGE(32381), "path": "ridge/standard/NORTHEAST_loop.gif"},
+    "se":    {"name": LANGUAGE(32383), "path": "ridge/standard/SOUTHEAST_loop.gif"},
+    "car":   {"name": LANGUAGE(32384), "path": "ridge/standard/CARIB_loop.gif"},
+    "ak":    {"name": LANGUAGE(32364), "path": "ridge/standard/ALASKA_loop.gif"},
+    "hi":    {"name": LANGUAGE(32389), "path": "ridge/standard/HAWAII_loop.gif"},
+    "guam":  {"name": LANGUAGE(32397), "path": "ridge/standard/GUAM_loop.gif"}
+}

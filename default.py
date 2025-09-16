@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-import sys
 from lib import noaa
 
 
@@ -12,8 +11,3 @@ from lib import noaa
 
 if (__name__ == '__main__'):
     noaa.Noaa()
-
-
-
-
-
