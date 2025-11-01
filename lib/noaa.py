@@ -43,7 +43,7 @@ def clear_property(name: str):
     xbmcgui.Window(12600).clearProperty(name)
 
 
-def code_from_icon(icon) -> tuple[str, int]:
+def code_from_icon(icon:str) -> tuple[str, int]:
     if icon:
         # xbmc.log('icon: %s' % (icon) ,level=xbmc.LOGDEBUG)
 
@@ -53,30 +53,30 @@ def code_from_icon(icon) -> tuple[str, int]:
         # https://forecast.weather.gov/DualImage.php?i=bkn&j=shra&jp=30
         # https://forecast.weather.gov/DualImage.php?i=shra&j=bkn&ip=30
         if 'DualImage' in icon:
-            #            xbmc.log('icon: %s' % icon,level=xbmc.LOGERROR)
+            # xbmc.log('icon: %s' % icon,level=xbmc.LOGERROR)
 
             params = icon.split("?")[1].split("&")
-#            xbmc.log('params: %s' % params,level=xbmc.LOGERROR)
+            # xbmc.log('params: %s' % params,level=xbmc.LOGERROR)
 
             code = "day"
             rain = None
             for param in params:
-                #             xbmc.log('param: %s' % param,level=xbmc.LOGERROR)
+                # xbmc.log('param: %s' % param,level=xbmc.LOGERROR)
 
                 thing = param.split("=")
                 p = thing[0]
                 v = thing[1]
-                xbmc.log('p: %s' % p, level=xbmc.LOGERROR)
-                xbmc.log('v: %s' % v, level=xbmc.LOGERROR)
+                xbmc.log(f'p: {p}', level=xbmc.LOGERROR)
+                xbmc.log(f'v: {v}', level=xbmc.LOGERROR)
                 if p == "i":
-                    code = "%s/%s" % ("day", v)
-                if p == "ip" or p == "jp":
+                    code = f"day/{v}"
+                if p in ("ip", "jp"):
                     if(not rain) or (v > rain):
                         rain = v
 #            xbmc.log('code: %s' % code,level=xbmc.LOGERROR)
 #            xbmc.log('rain: %s' % rain,level=xbmc.LOGERROR)
 
-            return code, rain if rain else 0
+            return code, int(rain) if rain else 0
 
         if '?' in icon:
             icon = icon.rsplit('?', 1)[0]
@@ -103,7 +103,7 @@ def code_from_icon(icon) -> tuple[str, int]:
                 if rain is None or train > rain:
                     rain = train
 
-            # forcast.gov urls may have codes like    sct30, which means "scattered clouds 30% chance of rain" ,so regex for it
+            # forcast.gov urls may have codes like sct30, which means "scattered clouds 30% chance of rain" ,so regex for it
             cresult = re.search(r"([a-z]+)(\d*)", thing[0])
             if cresult and cresult.group(1):
                 code = f"{daynight}/{cresult.group(1)}"
@@ -331,6 +331,19 @@ class Noaa:
     # fetches daily weather data
     ########################################################################################
 
+    def get_metar(self, station:str) ->str:
+        """_summary_Gets current METAR as raw data from an airport reporting station
+
+        Args:
+            station (str): The airport 4-alphanum ICAO
+        Returns:
+            str: the raw METAR
+        """
+        url = f'https://aviationweather.gov/api/data/metar?ids={station}&format=json'
+        current_metar:list[dict] = get_url_JSON(url)
+        return current_metar[0].get('rawOb', '')
+
+
     def fetchDaily(self, num):
 
         log(f"SOURCEPREF: {SOURCEPREF}")
@@ -358,7 +371,7 @@ class Noaa:
             return self.fetchAltDaily(num)
 
         for count, item in enumerate(data['periods'], start=0):
-            icon = item['icon']
+            icon:str = item['icon']
             # https://api.weather.gov/icons/land/night/ovc?size=small
             if icon and '?' in icon:
                 icon = icon.rsplit('?', 1)[0]
@@ -370,6 +383,13 @@ class Noaa:
             set_property(f'Day{count}.isDaytime', str(item['isDaytime']))
             set_property(f'Day{count}.Title', item['name'])
 
+            if count == 0:  #use first forecast period for current chance of rain
+                rain:int = item['probabilityOfPrecipitation']['value']
+                set_property('Current.ChancePrecipitation', str(rain))
+                set_property('Current.Precipitation', str(rain))
+                log(f'First period chance precip is {rain}')
+                set_property('Daily.1.DetailedForecast', item.get('detailedForecast', '').replace('/n', ' '))
+
             if item['isDaytime']:
                 # Since we passed units into api, we may need to convert to C, or may not
                 if 'F' in TEMPUNIT:
@@ -377,22 +397,34 @@ class Noaa:
                         int(round(FtoC(item['temperature'])))))
                     set_property(f'Day{count}.LowTemp', str(
                         int(round(FtoC(item['temperature'])))))
+                    if count in [0,1]:
+                        log(f'item {pp(item)} period {count} Daytime temp is {item['temperature']}')
+                        set_property('Today.HighTemperature', f"{item['temperature']:.1f}")
                 elif 'C' in TEMPUNIT:
                     set_property(f'Day{count}.HighTemp', str(
                         int(round(item['temperature']))))
                     set_property(f'Day{count}.LowTemp', str(
                         int(round(item['temperature']))))
+                    if count in [0,1]:
+                        log(f'item {pp(item)} period {count} Daytime temp is {item['temperature']}')
+                        set_property('Today.HighTemperature', f"{item['temperature']:.1f}")
             if not item['isDaytime']:
                 if 'F' in TEMPUNIT:
                     set_property(f'Day{count}.HighTemp', str(
                         int(round(FtoC(item['temperature'])))))
                     set_property(f'Day{count}.LowTemp', str(
                         int(round(FtoC(item['temperature'])))))
+                    if count in [0,1]:
+                        log(f'item {pp(item)} period {count} Nitetime temp is {int(round(FtoC(item['temperature'])))}')
+                        set_property('Today.LowTemperature', f"{item['temperature']:.1f}")
                 elif 'C' in TEMPUNIT:
                     set_property(f'Day{count}.HighTemp', str(
                         int(round(item['temperature']))))
                     set_property(f'Day{count}.LowTemp', str(
                         int(round(item['temperature']))))
+                    if count in [0,1]:
+                            log(f'item {pp(item)} period {count} Nitetime temp is {int(round(item['temperature']))}')
+                            set_property('Today.LowTemperature', f"{item['temperature']:.1f}")
             set_property(f'Day{count}.Outlook', item['shortForecast'])
             set_property(f'Day{count}.FanartCode', weathercode)
             set_property(f'Day{count}.OutlookIcon', WEATHER_ICON % weathercode)
@@ -423,9 +455,9 @@ class Noaa:
 
                 # we passed units to api, so we got back C or F, so don't need to convert
                 set_property(f'Daily.{count+1}.TempDay',
-                             '%s%s' % (item['temperature'], TEMPUNIT))
+                             f'{item["temperature"]}{TEMPUNIT}')
                 set_property(f'Daily.{count+1}.HighTemperature',
-                             f'{item['temperature']}{TEMPUNIT}')
+                             f'{item["temperature"]}{TEMPUNIT}')
                 set_property(f'Daily.{count+1}.TempNight', '')
                 set_property(f'Daily.{count+1}.LowTemperature', '')
 
@@ -438,12 +470,11 @@ class Noaa:
                 set_property(f'Daily.{count+1}.HighTemperature', '')
                 # we passed units to api, so we got back C or F, so don't need to convert
                 set_property(f'Daily.{count+1}.TempNight',
-                             '%s%s' % (item['temperature'], TEMPUNIT))
+                             f'{item["temperature"]}{TEMPUNIT}')
                 set_property(f'Daily.{count+1}.LowTemperature',
-                             '%s%s' % (item['temperature'],
-                                       TEMPUNIT))
+                             f'{item["temperature"]}{TEMPUNIT}')
 
-            if [1] == 'd' or DATEFORMAT[0] == 'D':
+            if DATEFORMAT[1] == 'd' or DATEFORMAT[0] == 'D':
                 set_property(f'Daily.{count+1}.LongDate',
                              get_datestr(startstamp, 'dl'))
                 set_property(f'Daily.{count+1}.ShortDate',
@@ -456,7 +487,7 @@ class Noaa:
 
             rain = 0
             if item['probabilityOfPrecipitation'] and item['probabilityOfPrecipitation']['value']:
-                rain = item['probabilityOfPrecipitation']['value']
+                rain:int = item['probabilityOfPrecipitation']['value']
 
             if rain and str(rain) and "0" != str(rain):
                 set_property(f'Daily.{count+1}.Precipitation', str(rain) + '%')
@@ -468,7 +499,7 @@ class Noaa:
     # fetches daily weather data using alternative api endpoint
     ########################################################################################
 
-    def fetchAltDaily(self, num):
+    def fetchAltDaily(self, num:str):
 
         latlong = ADDON.getSetting('Location'+str(num)+"LatLong")
         latitude = latlong.rsplit(',', 1)[0]
@@ -529,7 +560,8 @@ class Noaa:
 
             set_property(f'Day{count}.OutlookIcon', WEATHER_ICON % weathercode)
             set_property(f'Day{count}.RemoteIcon', icon)
-            set_property(f'Day{count}.FanartCode', weathercode)
+            if weathercode:
+                set_property(f'Day{count}.FanartCode', weathercode)
 
             # NOTE: Day props are 0 based, but Daily/Hourly are 1 based
             set_property(f'Daily.{count+1}.DetailedOutlook', item['text'])
@@ -539,7 +571,8 @@ class Noaa:
             set_property(f'Daily.{count+1}.OutlookIcon',
                          WEATHER_ICON % weathercode)
             set_property(f'Daily.{count+1}.RemoteIcon', icon)
-            set_property(f'Daily.{count+1}.FanartCode', weathercode)
+            if weathercode:
+                set_property(f'Daily.{count+1}.FanartCode', weathercode)
 
             if item['tempLabel'] == 'High':
                 set_property(f'Daily.{count+1}.LongDay',
@@ -551,14 +584,14 @@ class Noaa:
                 set_property(f'Daily.{count+1}.LowTemperature', '')
                 if 'F' in TEMPUNIT:
                     set_property(f'Daily.{count+1}.TempDay',
-                                 '%s%s' % (int(round(float(item['temperature']))), TEMPUNIT))
+                                 f'{int(round(float(item["temperature"])))}{TEMPUNIT}')
                     set_property(f'Daily.{count+1}.HighTemperature',
-                                 '%s%s' % (int(round(float(item['temperature']))), TEMPUNIT))
+                                 f'{int(round(float(item["temperature"])))}{TEMPUNIT}')
                 elif 'C' in TEMPUNIT:
                     set_property(f'Daily.{count+1}.TempDay',
-                                 '%s%s' % (int(round(FtoC(float(item['temperature'])))), TEMPUNIT))
+                                 f'{int(round(FtoC(float(item["temperature"]))))}{TEMPUNIT}')
                     set_property(f'Daily.{count+1}.HighTemperature',
-                                 '%s%s' % (int(round(FtoC(float(item['temperature'])))), TEMPUNIT))
+                                 f'{int(round(FtoC(float(item["temperature"]))))}{TEMPUNIT}')
 
             if item['tempLabel'] == 'Low':
                 set_property(f'Daily.{count+1}.LongDay',
@@ -570,14 +603,14 @@ class Noaa:
                 set_property(f'Daily.{count+1}.HighTemperature', '')
                 if 'F' in TEMPUNIT:
                     set_property(f'Daily.{count+1}.TempNight',
-                                 '%s%s' % (int(round(float(item['temperature']))), TEMPUNIT))
+                                 f'{int(round(float(item["temperature"])))}{TEMPUNIT}')
                     set_property(f'Daily.{count+1}.LowTemperature',
-                                 '%s%s' % (int(round(float(item['temperature']))), TEMPUNIT))
+                                 f'{int(round(float(item["temperature"])))}{TEMPUNIT}')
                 elif 'C' in TEMPUNIT:
                     set_property(f'Daily.{count+1}.TempNight',
-                                 '%s%s' % (int(round(FtoC(float(item['temperature'])))), TEMPUNIT))
+                                 f'{int(round(FtoC(float(item["temperature"]))))}{TEMPUNIT}')
                     set_property(f'Daily.{count+1}.LowTemperature',
-                                 '%s%s' % (int(round(FtoC(float(item['temperature'])))), TEMPUNIT))
+                                 f'{int(round(FtoC(float(item["temperature"]))))}{TEMPUNIT}')
 
             if DATEFORMAT[1] == 'd' or DATEFORMAT[0] == 'D':
                 set_property(f'Daily.{count+1}.LongDate',
@@ -608,7 +641,8 @@ class Noaa:
             set_property('Current.RemoteIcon', icon)
             # xbmc translates it to Current.ConditionIcon
             set_property('Current.OutlookIcon', f'{weathercode}.png')
-            set_property('Current.FanartCode', weathercode)
+            if weathercode:
+                set_property('Current.FanartCode', weathercode)
             set_property('Current.Condition',
                          FORECAST.get(data.get('Weather', ''), ''))
             set_property('Current.Humidity', str(data.get('Relh')))
@@ -644,9 +678,9 @@ class Noaa:
     #            ##set_property('Current.WindGust'    , '')
 
             if rain and str(rain) and "0" != str(rain):
-                set_property('Current.ChancePrecipitation', str(rain)+'%')
+                set_property('Current.Precipitation', str(rain)+'%')
             else:
-                clear_property('Current.ChancePrecipitation')
+                clear_property('Current.Precipitation')
 
             # calculate feels like
             clear_property('Current.FeelsLike')
@@ -655,7 +689,7 @@ class Noaa:
                 if not wind:
                     wind = 0
                 feelslike = FEELS_LIKE_C_KPH(FtoC(data.get('Temp')),
-                                             float(wind)/2.237,
+                                             int(float(wind)/2.237),
                                              int(data.get('Relh')))
                 if feelslike:
                     # xbmc.log('feelslike: %s' % (feelslike),level=xbmc.LOGERROR)
@@ -677,24 +711,31 @@ class Noaa:
     # fetches current weather info for location
     ########################################################################################
 
-    def fetchCurrent(self, num):
-        station = ADDON.getSetting('Location'+str(num)+'Station')
-        url = "https://api.weather.gov/stations/%s/observations/latest" % station
-        current = get_url_JSON(url)
+    def fetchCurrent(self, num:str):
+        station = ADDON.getSetting(f'Location{num}Station')
+        url = f"https://api.weather.gov/stations/{station}/observations/latest"
+        current:dict[str,str]|list[dict[str,str]] = get_url_JSON(url)
         if current and 'properties' in current:
-            data = current['properties']
+            data:dict[str,str] = current['properties']
         else:
             xbmc.log(
                 f'failed to find weather data from : {url}', level=xbmc.LOGERROR)
             xbmc.log(f'{current}', level=xbmc.LOGERROR)
             return
-
-        parsed_metar = Metar(data['rawMessage']).string(
-        ) if data.get('rawMessage') else ''
-        log(f'METAR PARSED is {parsed_metar}')
+        parsed_metar = None
+        metar_station = data.get('stationId')
+        if metar_station:
+            metarcode = self.get_metar(metar_station)
+            if metarcode:
+                parsed_metar = Metar(metarcode).string()
+        if not parsed_metar:
+            parsed_metar = Metar(data['rawMessage']).string(
+            ) if data.get('rawMessage') else 'Not available'
+        #log(f'METAR PARSED is {parsed_metar}')
+        parsed_metar = parsed_metar.replace('\n', ' / ')
         set_property('Current.METAR', parsed_metar)
 
-        icon = data['icon']
+        icon:str = data['icon']
         # https://api.weather.gov/icons/land/night/ovc?size=small
         code = None
         rain = None
@@ -710,7 +751,7 @@ class Noaa:
             set_property('Current.FanartCode', weathercode)
 
         set_property('Current.Condition', FORECAST.get(
-            data.get('textDescription', ''), ''))
+            data.get('textDescription', '').lower(), data.get('textDescription', '')))
         try:
             set_property('Current.Humidity', str(
                 round(data.get('relativeHumidity').get('value'))))
@@ -720,7 +761,7 @@ class Noaa:
 
         try:
             # temp = int(round(data.get('temperature').get('value')))
-            temp = data.get('temperature').get('value')
+            temp:float = data.get('temperature').get('value')
             # api values are in C
             set_property('Current.Temperature', str(temp))
         except Exception:
@@ -743,7 +784,7 @@ class Noaa:
             clear_property('Current.WindDirection')
 
         if rain and str(rain) and "0" != str(rain):
-            set_property('Current.Precipitation', f'{rain}%')
+            set_property('Current.Precipitation', f'{rain}')
         else:
             # set_property('Current.ChancePrecipitation', '')
             clear_property('Current.Precipitation')
@@ -752,7 +793,7 @@ class Noaa:
         clear_property('Current.WindChill')
         clear_property('Current.HeatIndex')
         # calculate feels like
-        windspeed: int = data.get('windSpeed').get('value')
+        windspeed:int = data.get('windSpeed').get('value')
         if not windspeed:
             windspeed = 0
 
@@ -774,10 +815,10 @@ class Noaa:
             # xbmc.log('windchill direct: %s' % (str(int(round(data.get('windChill').get('value'))))),level=xbmc.LOGERROR)
             if 'F' in TEMPUNIT:
                 set_property('Current.WindChill',
-                             '%s%s' % (int(round(CtoF(data.get('windChill').get('value')))), TEMPUNIT))
+                             f'{int(round(CtoF(data.get("windChill").get("value"))))}{TEMPUNIT}')
             elif 'C' in TEMPUNIT:
                 set_property('Current.WindChill',
-                             '%s%s' % (int(round(data.get('windChill').get('value'))), TEMPUNIT))
+                             f'{int(round(data.get("windChill").get("value")))}{TEMPUNIT}')
             # feels like wants raw celcius value
             set_property('Current.FeelsLike', str(
                 data.get('windChill').get('value')))
@@ -786,10 +827,10 @@ class Noaa:
             # xbmc.log('windchill direct: %s' % (str(int(round(data.get('heatIndex').get('value'))))),level=xbmc.LOGERROR)
             if 'F' in TEMPUNIT:
                 set_property('Current.heatIndex',
-                             '%s%s' % (int(round(CtoF(data.get('heatIndex').get('value')))), TEMPUNIT))
+                             f'{int(round(CtoF(data.get("heatIndex").get("value"))))}{TEMPUNIT}')
             elif 'C' in TEMPUNIT:
                 set_property('Current.heatIndex',
-                             '%s%s' % (int(round(data.get('heatIndex').get('value'))), TEMPUNIT))
+                             f'{int(round(data.get("heatIndex").get("value")))}{TEMPUNIT}')
             # feels like wants raw celcius value
             set_property('Current.FeelsLike', str(
                 data.get('heatIndex').get('value')))
@@ -809,14 +850,16 @@ class Noaa:
     #        set_property('Current.WindGust'    , '')
 
         try:
-            set_property('Current.SeaLevel', str(
-                data.get('seaLevelPressure').get('value', 0)))
+            set_property('Current.SeaLevel',
+                f'{data.get("seaLevelPressure").get("value", 0)/100:.1f} mb')  #Pascal to millibar
         except Exception:
             set_property('Current.SeaLevel', '')
 
         try:
-            set_property('Current.GroundLevel', str(
-                data.get('barometricPressure').get('value', 0)))
+            set_property('Current.GroundLevel',
+                f'{data.get("barometricPressure").get("value", 0)/100:.1f} mb')
+            set_property('Current.Pressure',
+                f'{data.get("barometricPressure").get("value", 0)/100:.1f} mb')
         except Exception:
             set_property('Current.GroundLevel', '')
 
@@ -824,7 +867,7 @@ class Noaa:
     # fetches any weather alerts for location
     ########################################################################################
 
-    def fetchWeatherAlerts(self, num):
+    def fetchWeatherAlerts(self, num:str):
 
         # we could fetch alerts for either 'County', or 'Zone'
         # https://api.weather.gov/alerts/active/zone/CTZ006
@@ -838,15 +881,14 @@ class Noaa:
 
         # we are storing lat,long as comma separated already, so that is convienent for us and we can just drop it into the url
         latlong = ADDON.getSetting('Location'+str(num)+'LatLong')
-        url = "https://api.weather.gov/alerts/active?status=actual&point=%s" % (
-            latlong)
+        url = f"https://api.weather.gov/alerts/active?status=actual&point={latlong}"
 
         # if 'F' in TEMPUNIT:
         #    url="%s&units=us" % url
         # elif 'C' in TEMPUNIT:
         #    url="%s&units=si" % url
 
-        alerts = get_url_JSON(url)
+        alerts:dict = get_url_JSON(url)
         # if we have a valid response then clear our current alerts
         if alerts and 'features' in alerts:
             for count in range(1, 10):
@@ -1217,7 +1259,6 @@ class Noaa:
         else:
 
             num = sys.argv[1]
-            log(f'sys.srg num type: {type(num)}')
             LatLong = ADDON.getSetting(f'Location{num}LatLong')
 
             station = ADDON.getSetting(f'Location{num}Station')

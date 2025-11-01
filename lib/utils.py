@@ -44,7 +44,16 @@ def pp(json_dict) -> str:
     return pformat(json_dict, indent=2)
 
 
-def get_url_JSON(url) -> dict:
+def get_url_JSON(url:str) -> dict[str,str]|list[dict[str,str]]:
+    """Query endpoint for weather data as python object
+
+    Args:
+        url (str): the url to call
+
+    Returns:
+        dict[str,str]|list[dict[str,str]]: weather data, either a single report as dict or multiple
+        reports as a list of dicts
+    """
     data = {}
     try:
         xbmc.log(f'fetching url: {url}', level=xbmc.LOGDEBUG)
@@ -404,7 +413,15 @@ def CtoF(Celsius) -> float:
         return 0
 
 
-def TEMP(deg):
+def TEMP(deg:float) ->str:
+    """Convert celcius temp to other units
+
+    Args:
+        deg (int): temp in degree C
+
+    Returns:
+        str: string representation of converted temp rounded
+    """
     if TEMPUNIT == '\N{DEGREE SIGN}'+'F':
         temp = deg * 1.8 + 32
     elif TEMPUNIT == 'K':
@@ -567,7 +584,7 @@ def WIND_CHILL_C_KPH(Ts, Vs):
 
 
 # https://www.wpc.ncep.noaa.gov/html/heatindex_equation.shtml
-def HEAT_INDEX_F(Ts, Rs):
+def HEAT_INDEX_F(Ts, Rs) ->float|None:
     T = float(Ts)
     R = float(Rs)
     # xbmc.log'Heat_index_F %sF %s' % (T, R),level=xbmc.LOGERROR)
@@ -606,18 +623,18 @@ def HEAT_INDEX_F(Ts, Rs):
         return HI
 
 
-def HEAT_INDEX_C(Ts, Rs):
+def HEAT_INDEX_C(Ts, Rs) ->float|None:
     T = float(Ts)
     R = float(Rs)
     TF = CtoF(T)  # calaculation is done in F
     HI = HEAT_INDEX_F(TF, R)
     if HI:
         return FtoC(HI)
-    # otherwise, no relevennt heat index so return
+    # otherwise, no relevant heat index so return
 
 
 # thanks to FrostBox @ http://forum.kodi.tv/showthread.php?tid=114637&pid=937168#pid937168
-def DEW_POINT(Tc=0.0, R=93.0, ext=True, minR=(0, 0.075)[0]):
+def DEW_POINT(Tc=0.0, R=93.0, ext=True, minR=(0, 0.075)[0]) ->str:
     Es = 6.11 * math.pow(10.0, (7.5 * Tc / (237.7 + Tc)))
     R = R or minR
     E = (R * Es) / 100.0

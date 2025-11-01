@@ -88,9 +88,11 @@ Current Weather:
  - Current.WindDirection
  - Current.WindGust
  - Current.ChancePrecipitation
+ - Current.Precipitation
  - Current.FeelsLike
- - Current.SeaLevel    # pressure at sealevel
- - Current.GroundLevel # pressure at groundlevel
+ - Current.SeaLevel      # pressure at sealevel
+ - Current.GroundLevel   # pressure at groundlevel
+ - Current.Pressure      # groundlevel pressure
 
 Weather Alerts (1-10): number varies depending on number of alerts currently issued by the NWS
 
